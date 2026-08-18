@@ -1,7 +1,14 @@
 import db from '../models/db.js';
 import { analyzeComplaint } from '../services/aiService.js';
 import { createNotification, notifyAdmins } from '../services/notificationService.js';
+/*import { createNotification } from '../services/notificationService.js';
 
+// Inside your update complaint / assign staff function:
+createNotification(
+  complaint.user_id,
+  'Status Updated',
+  `Your complaint "${complaint.title}" is now marked as ${status}.`
+);*/
 export async function createComplaint(req, res) {
   try {
     const { title, description, category, building, floor, room_or_area, latitude, longitude } = req.body;
