@@ -1,6 +1,9 @@
 {
   "name": "campus-ops-system",
   "version": "1.0.0",
+  "engines": {
+    "node": "20.18.0"
+  },
   "scripts": {
     "build": "npm install --prefix frontend --include=dev && npm run build --prefix frontend && npm install --prefix backend",
     "start": "node backend/seed.js && node backend/src/server.js"
