@@ -24,19 +24,41 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/qr', qrRoutes);
 
-// In-app notifications endpoint
+// In-app notifications
 app.get('/api/notifications', authenticateToken, (req, res) => {
-  const notes = db.prepare(`SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 20`).all(req.user.id);
-  res.json(notes);
+  try {
+    const notes = db.prepare(`SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 20`).all(req.user.id);
+    res.json(notes);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
+app.patch('/api/notifications/read-all', authenticateToken, (req, res) => {
+  try {
+    db.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ?`).run(req.user.id);
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Serve frontend build static files (2 levels up from backend/src -> root -> frontend/dist)
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// Client-side routing catch-all
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
+
+// Listen
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });
