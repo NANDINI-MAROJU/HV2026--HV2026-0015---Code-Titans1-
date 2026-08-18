@@ -2,21 +2,20 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../models/db.js';
 
-export const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
-
-  const cleanEmail = email.toLowerCase().trim();
-  const rawPassword = password || 'password123';
-
+export const login = (req, res) => {
   try {
+    const { email, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const rawPassword = password || 'password123';
+
     let user = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(cleanEmail);
 
     if (!user) {
-      // 1. Determine role dynamically from email
       let role = 'student';
       if (cleanEmail.includes('admin')) {
         role = 'admin';
@@ -27,7 +26,6 @@ export const login = async (req, res) => {
       const name = cleanEmail.split('@')[0];
       const hashedPassword = bcrypt.hashSync(rawPassword, 10);
 
-      // 2. Auto-create user
       const result = db.prepare(`
         INSERT INTO users (name, email, password, role)
         VALUES (?, ?, ?, ?)
@@ -36,7 +34,6 @@ export const login = async (req, res) => {
       user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
     }
 
-    // 3. Generate JWT Token (Always succeeds for any user)
     const token = jwt.sign(
       { id: user.id, name: user.name, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'your_secret_jwt_key_here_12345',
@@ -60,20 +57,28 @@ export const login = async (req, res) => {
   }
 };
 
-export const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+export const register = (req, res) => {
   try {
-    const cleanEmail = email.toLowerCase().trim();
+    const { name, email, password, role } = req.body;
+    const cleanEmail = (email || '').toLowerCase().trim();
+
+    if (!cleanEmail || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
     const existing = db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(cleanEmail);
     if (existing) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
+    const userName = name || cleanEmail.split('@')[0];
+    const userRole = role || 'student';
+
     const result = db.prepare(`
       INSERT INTO users (name, email, password, role)
       VALUES (?, ?, ?, ?)
-    `).run(name, cleanEmail, hashedPassword, role || 'student');
+    `).run(userName, cleanEmail, hashedPassword, userRole);
 
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
 
@@ -89,6 +94,20 @@ export const register = async (req, res) => {
       user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
+    console.error('Register error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const getProfile = (req, res) => {
+  try {
+    const user = db.prepare('SELECT id, name, email, role, phone, department, created_at FROM users WHERE id = ?').get(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json(user);
+  } catch (error) {
+    console.error('Profile error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
