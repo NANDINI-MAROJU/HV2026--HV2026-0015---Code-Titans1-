@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables
+.env
+*/.env
+
+# Build outputs
+dist/
+build/
+*/dist/
+
+# Local database & logs
+*.db
+*.db-journal
+backend/campus.db
+backend/campus.db-journal
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
