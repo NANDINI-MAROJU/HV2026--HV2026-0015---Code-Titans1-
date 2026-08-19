@@ -58,7 +58,7 @@ export default function ComplaintDetails() {
           <div>
             <span className="text-xs font-semibold text-slate-500 block mb-1">Attached Proof</span>
             <img
-              src={`http://localhost:5000${complaint.attachment_url}`}
+              src={complaint.attachment_url}
               alt="Issue attachment"
               className="w-48 h-32 object-cover rounded-lg border"
             />
